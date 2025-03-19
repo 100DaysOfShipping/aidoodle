@@ -1,103 +1,223 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useRef, useEffect } from 'react';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [ctx, setCtx] = useState<CanvasRenderingContext2D | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [tool, setTool] = useState<'pencil' | 'eraser'>('pencil');
+  const [color, setColor] = useState('#000000');
+  const [aiCommand, setAiCommand] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  // Initialize canvas context
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      canvas.width = 800;
+      canvas.height = 600;
+      const context = canvas.getContext('2d');
+      if (context) {
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+        context.lineWidth = 5;
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        setCtx(context);
+      }
+    }
+  }, []);
+
+  // Drawing functions
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!ctx) return;
+    
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    ctx.beginPath();
+    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    setIsDrawing(true);
+    
+    if (tool === 'pencil') {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 5;
+    } else if (tool === 'eraser') {
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 20;
+    }
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing || !ctx) return;
+    
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    if (!ctx) return;
+    ctx.closePath();
+    setIsDrawing(false);
+  };
+
+  // Handle AI command submission
+  const handleAiCommandSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!aiCommand.trim() || !canvasRef.current) return;
+
+    setIsLoading(true);
+    try {
+      // Get canvas data as PNG
+      const imageData = canvasRef.current.toDataURL('image/png');
+      
+      // Send to API
+      const response = await fetch('/api/edit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image: imageData,
+          command: aiCommand,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Load the returned image onto canvas
+        if (data.editedImage) {
+          const img = new Image();
+          img.onload = () => {
+            if (ctx && canvasRef.current) {
+              ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+              ctx.drawImage(img, 0, 0);
+            }
+          };
+          img.src = data.editedImage;
+        }
+      } else {
+        console.error('API request failed');
+      }
+    } catch (error) {
+      console.error('Error processing AI command:', error);
+    } finally {
+      setIsLoading(false);
+      setAiCommand('');
+    }
+  };
+
+  // Reset canvas function
+  const resetCanvas = () => {
+    if (!ctx || !canvasRef.current) return;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+  };
+
+  // Download canvas function
+  const downloadCanvas = () => {
+    if (!canvasRef.current) return;
+    const link = document.createElement('a');
+    link.download = 'ai-doodle.png';
+    link.href = canvasRef.current.toDataURL('image/png');
+    link.click();
+  };
+
+  return (
+    <main className="flex min-h-screen flex-col items-center p-8 bg-gray-100">
+      <div className="w-full max-w-4xl">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-4xl font-bold text-indigo-600">AI Doodle App</h1>
+          
+          <div className="flex gap-4 items-center">
+            <div className="flex gap-2">
+              <button
+                className={`px-4 py-2 rounded-md ${tool === 'pencil' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                onClick={() => setTool('pencil')}
+              >
+                Pencil
+              </button>
+              <button
+                className={`px-4 py-2 rounded-md ${tool === 'eraser' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                onClick={() => setTool('eraser')}
+              >
+                Eraser
+              </button>
+              <button
+                className="px-4 py-2 rounded-md bg-red-500 text-white"
+                onClick={resetCanvas}
+              >
+                Reset
+              </button>
+              <button
+                className="px-4 py-2 rounded-md bg-green-500 text-white"
+                onClick={downloadCanvas}
+              >
+                Download
+              </button>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <label htmlFor="colorPicker" className="text-gray-700">Color:</label>
+              <input
+                id="colorPicker"
+                type="color"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                className="w-10 h-10 border-none cursor-pointer"
+              />
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+        
+        <div className="relative mb-4">
+          <canvas
+            ref={canvasRef}
+            className="border-4 border-indigo-500 rounded-lg bg-white shadow-lg w-full"
+            onMouseDown={startDrawing}
+            onMouseMove={draw}
+            onMouseUp={stopDrawing}
+            onMouseLeave={stopDrawing}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+          
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 rounded-lg">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-600"></div>
+              <p className="ml-4 text-lg font-medium text-indigo-600">Processing your request...</p>
+            </div>
+          )}
+        </div>
+        
+        <form onSubmit={handleAiCommandSubmit} className="w-full mb-6">
+          <div className="flex items-center border-2 border-indigo-500 rounded-lg overflow-hidden">
+            <input
+              type="text"
+              value={aiCommand}
+              onChange={(e) => setAiCommand(e.target.value)}
+              placeholder="Enter AI command (e.g., 'draw apple')"
+              className="flex-grow px-4 py-2 focus:outline-none"
+              disabled={isLoading}
+            />
+            <button
+              type="submit"
+              className="bg-indigo-600 text-white px-6 py-2 font-medium hover:bg-indigo-700 transition-colors"
+              disabled={isLoading}
+            >
+              Generate
+            </button>
+          </div>
+        </form>
+        
+        <div className="text-center text-gray-600">
+          <p>Draw something on the canvas and use AI commands to enhance your doodle!</p>
+          <p className="text-sm mt-2">Example commands: "draw apple", "add clouds", "turn into cartoon"</p>
+        </div>
+      </div>
+    </main>
   );
 }
