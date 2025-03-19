@@ -81,39 +81,38 @@ export async function POST(request: NextRequest) {
         editedImage = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
         
         // Save the image locally
-        try {
-          // Create a unique filename with timestamp
-          const timestamp = new Date().getTime();
-          const filename = `edited_image_${timestamp}.png`;
+        // try {
+        //   // Create a unique filename with timestamp
+        //   const timestamp = new Date().getTime();
+        //   const filename = `edited_image_${timestamp}.png`;
           
-          // Define the directory path (same as the API route)
-          const dirPath = path.join(process.cwd(), 'app/api/edit');
+        //   // Define the directory path (same as the API route)
+        //   const dirPath = path.join(process.cwd(), 'app/api/edit');
           
-          // Ensure the directory exists
-          if (!fs.existsSync(dirPath)) {
-            fs.mkdirSync(dirPath, { recursive: true });
-          }
+        //   // Ensure the directory exists
+        //   if (!fs.existsSync(dirPath)) {
+        //     fs.mkdirSync(dirPath, { recursive: true });
+        //   }
           
-          // Define the full file path
-          const filePath = path.join(dirPath, filename);
+        //   // Define the full file path
+        //   const filePath = path.join(dirPath, filename);
           
-          // Convert base64 to buffer and write to file
-          const buffer = Buffer.from(part.inlineData.data, 'base64');
-          fs.writeFileSync(filePath, buffer);
+        //   // Convert base64 to buffer and write to file
+        //   const buffer = Buffer.from(part.inlineData.data, 'base64');
+        //   fs.writeFileSync(filePath, buffer);
           
-          savedFilePath = filePath;
-          console.log(`Image saved locally at: ${savedFilePath}`);
-        } catch (saveError) {
-          console.error('Error saving image locally:', saveError);
-        }
+        //   savedFilePath = filePath;
+        //   console.log(`Image saved locally at: ${savedFilePath}`);
+        // } catch (saveError) {
+        //   console.error('Error saving image locally:', saveError);
+        // }
       }
     }
 
     // Return the edited image, text response, and saved file path
     return NextResponse.json({
       editedImage,
-      responseText,
-      savedFilePath
+      responseText
     });
 
   } catch (error) {
