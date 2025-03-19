@@ -1,0 +1,10 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-md">
+    <path d="M24 4C12.954 4 4 12.954 4 24C4 35.046 12.954 44 24 44C35.046 44 44 35.046 44 24C44 12.954 35.046 4 24 4Z" fill="#ffffff" stroke="#000000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M28 14C28 14 32 18 32 24C32 30 28 34 28 34" stroke="#000000" strokeWidth="2" strokeLinecap="round" strokeDasharray="2 4"/>
+    <path d="M20 14C20 14 16 18 16 24C16 30 20 34 20 34" stroke="#000000" strokeWidth="2" strokeLinecap="round" strokeDasharray="2 4"/>
+    <path d="M14 20C14 20 18 24 24 24C30 24 34 20 34 20" stroke="#000000" strokeWidth="2" strokeLinecap="round" strokeDasharray="2 4"/>
+    <path d="M14 28C14 28 18 24 24 24C30 24 34 28 34 28" stroke="#000000" strokeWidth="2" strokeLinecap="round" strokeDasharray="2 4"/>
+    <path d="M24 24C26.2091 24 28 22.2091 28 20C28 17.7909 26.2091 16 24 16C21.7909 16 20 17.7909 20 20C20 22.2091 21.7909 24 24 24Z" fill="#333333"/>
+    <path d="M32 32C33.1046 32 34 31.1046 34 30C34 28.8954 33.1046 28 32 28C30.8954 28 30 28.8954 30 30C30 31.1046 30.8954 32 32 32Z" fill="#333333"/>
+    <path d="M16 32C17.1046 32 18 31.1046 18 30C18 28.8954 17.1046 28 16 28C14.8954 28 14 28.8954 14 30C14 31.1046 14.8954 32 16 32Z" fill="#333333"/>
+</svg>
